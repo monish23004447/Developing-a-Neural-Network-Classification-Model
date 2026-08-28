@@ -1,6 +1,4 @@
 # Developing a Neural Network Classification Model
-## Name: Monishkumar V
-## Reg No: 212223040116
 
 ## AIM
 To develop a neural network classification model for the given dataset.
@@ -13,90 +11,225 @@ In their existing market, the sales team has classified all customers into 4 seg
 You are required to help the manager to predict the right group of the new customers.
 
 ## Neural Network Model
-<img width="704" height="837" alt="image" src="https://github.com/user-attachments/assets/f5dc5c85-9218-4db2-885d-472eb28fa136" />
-
+Include the neural network model diagram.
 
 ## DESIGN STEPS
 ### STEP 1: 
+
 Load the dataset, remove irrelevant columns (ID), handle missing values, encode categorical features using Label Encoding, and encode the target class (Segmentation).
 
 ### STEP 2: 
+
 Split the dataset into training and testing sets, then normalize the input features using StandardScaler for better neural network performance.
 
 ### STEP 3: 
+
 Convert the scaled training and testing data into PyTorch tensors and create DataLoader objects for batch-wise training and evaluation.
 
 ### STEP 4: 
+
 Design a feedforward neural network with multiple fully connected layers and ReLU activation functions, ending with an output layer for multi-class classification.
 
 ### STEP 5: 
+
+
 Train the model using CrossEntropyLoss and Adam optimizer by performing forward propagation, loss calculation, backpropagation, and weight updates over multiple epochs.
 
+
+
 ### STEP 6: 
+
+
 Evaluate the trained model on test data using accuracy, confusion matrix, and classification report, and perform prediction on a sample input.
+
+
 
 ## PROGRAM
 
-### Name:Monishkumar V
+### Name: MONISHKUMAR V
 
 ### Register Number: 212223040116
 
-```python
-# Define Neural Network(Model1)
-class PeopleClassifier(nn.Module):
-    def __init__(self, input_size):
-        super(PeopleClassifier, self).__init__()
-        #Include your code here
-        self.fc1 =nn.Linear(input_size,32)
-        self.fc2 =nn.Linear(32, 16)
-        self.fc3 =nn.Linear(16, 8)
-        self.fc4 =nn.Linear(8, 4)
-    def forward(self, x):
-      #Include your code here
-      x=F.relu(self.fc1(x))
-      x=F.relu(self.fc2(x))
-      x=F.relu(self.fc3(x))
-      x=self.fc4(x)
-      return x    
-def train_model(model, train_loader, criterion, optimizer, epochs):
-  #Include your code here
-  model.train()
-  for epoch in range(epochs):
-    for inputs, labels in train_loader:
-      optimizer.zero_grad()
-      outputs = model(inputs)
-      loss = criterion(outputs, labels)
-      loss.backward()
-      optimizer.step()
-  if (epoch + 1) % 10 == 0:
-    print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
-train_model(model, train_loader, criterion, optimizer, epochs=100)
+```
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from sklearn.preprocessing import LabelEncoder,StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score,confusion_matrix,classification_report
+from torch.utils.data import TensorDataset,DataLoader
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+```
+```
+df=pd.read_csv("C:\\Users\\Akbar\\Downloads\\deep learning exp\\customers.csv")
+df
+
+```
+```
+df=df.drop(columns=["ID"])
+df
+```
+```
+df.columns
+```
+```
+df.fillna({"Work_Experience":0,"Family_Size":df["Family_Size"].median()},inplace=True)
+df
+```
+```
+cat_columns=['Gender','Ever_Married', 'Graduated', 'Profession',
+    'Spending_Score', 'Var_1']
+for col in cat_columns:
+    df[col]=LabelEncoder().fit_transform(df[col])
+```
+```
+lbe=LabelEncoder()
+df["Segmentation"]=lbe.fit_transform(df["Segmentation"])
+df
+```
+```
+x=df.drop(columns="Segmentation")
+y=df["Segmentation"].values
+xt,xst,yt,yst=train_test_split(x,y,test_size=0.2,random_state=42)
+```
+```
+scaler=StandardScaler()
+xt=scaler.fit_transform(xt)
+xst=scaler.transform(xst)
+```
+```
+xt=torch.FloatTensor(xt)
+xst=torch.FloatTensor(xst)
+yt=torch.FloatTensor(yt)
+yst=torch.FloatTensor(yst)
+```
+```
+tr=TensorDataset(xt,yt)
+tst=TensorDataset(xst,yst)
+trl=DataLoader(tr,batch_size=16,shuffle=True)
+tstl=DataLoader(tst,batch_size=16)
+```
 ```
 
+class classifier1(nn.Module):
+    def __init__(self,input_size):
+        super().__init__()
+        self.l1=nn.Linear(input_size,32)
+        self.l2=nn.Linear(32,16)
+        self.l3=nn.Linear(16,8)
+        self.l4=nn.Linear(8,4)
+    def forward(self,x):
+        x=F.relu(self.l1(x))
+        x=F.relu(self.l2(x))
+        x=F.relu(self.l3(x))
+        x=self.l4(x)
+        return x
+```
+```
+model=classifier1(input_size=xt.shape[1])
+criterion=nn.CrossEntropyLoss()
+op=optim.Adam(model.parameters(),lr=0.001)
+```
+```
+epochs=100
+for i in range(epochs):
+    for a,b in trl:
+        op.zero_grad()
+        pred=model(a)
+        loss=criterion(pred,b.long())
+        loss.backward()
+        op.step()
+    if i%10==0:
+        print(f"Loss:{i}/{epochs}",loss.item())
+
+```
+```
+pre=[]
+act=[]
+with torch.no_grad():
+    output=model(xst)
+    _,predicted=torch.max(output,1)
+    pre.extend(predicted.numpy())
+    act.extend(yst.numpy())
+    print(act,pre)
+```
+```
+
+accuracy=accuracy_score(act,pre)
+conf_matrix=confusion_matrix(act,pre)
+cl_report=classification_report(act,pre,target_names=['A','B','C','D'])
+print("Accuracy:",accuracy)
+print("confusion_matrix:\n",conf_matrix)
+print("classification_report:\n",cl_report)
+
+```
+```
+import seaborn as sns
+import matplotlib.pyplot as plt
+xl=['A','B','C','D']
+sns.heatmap(conf_matrix, annot=True, cmap='Blues', xticklabels=xl, yticklabels=xl,fmt='g')
+plt.xlabel("Predicted Labels")
+plt.ylabel("True Labels")
+plt.title("Confusion Matrix")
+plt.show()
+```
+
+```
+sample_input = xst[12].clone().unsqueeze(0).detach().type(torch.float32)
+model.eval()
+
+with torch.no_grad():
+    output = model(sample_input)
+    predicted_class_index = torch.argmax(output[0]).item()
+
+predicted_class_label = lbe.inverse_transform(
+    [predicted_class_index]
+)[0]
+
+actual_class_index = int(yst[12].item())
+actual_class_label = lbe.inverse_transform(
+    [actual_class_index]
+)[0]
+
+print(f'Predicted class for sample input: {predicted_class_label}')
+print(f'Actual class for sample input: {actual_class_label}')
+```
+
+
 ### Dataset Information
-<img width="1299" height="288" alt="image" src="https://github.com/user-attachments/assets/7cf7df75-94a1-46ec-bde0-dba3acaccd19" />
 
-
+<img width="1772" height="590" alt="image" src="https://github.com/user-attachments/assets/d63bfa05-ece6-4dc9-a470-4092e23b86c8" />
 
 ### OUTPUT
 
+
+<img width="572" height="320" alt="image" src="https://github.com/user-attachments/assets/df07a585-755b-46d4-bf69-b9cb5609d661" />
+
+
+
 ## Confusion Matrix
 
-<img width="713" height="594" alt="image" src="https://github.com/user-attachments/assets/46e7f873-052c-4323-a8d0-eea454f9b421" />
 
+<img width="872" height="712" alt="image" src="https://github.com/user-attachments/assets/63a86281-5fa4-42f7-9745-792cd758fcbf" />
 
 
 ## Classification Report
-<img width="1509" height="1042" alt="ss1" src="https://github.com/user-attachments/assets/84c4f8a9-dd1a-4a4c-b547-53c3764a8569" />
 
+
+
+<img width="777" height="535" alt="image" src="https://github.com/user-attachments/assets/41971934-337f-46de-964d-600af0535649" />
 
 
 
 ### New Sample Data Prediction
-<img width="1799" height="874" alt="ss2" src="https://github.com/user-attachments/assets/62150509-1e6c-42b5-a4f5-c3c8148f36ee" />
 
 
+<img width="510" height="99" alt="image" src="https://github.com/user-attachments/assets/84889721-9e21-491b-8543-e57e0036b5f9" />
 
 
 ## RESULT
-A neural network classification model was successfully developed and tested on the given dataset with satisfactory classification performance.
+Thus the python program to develop a neural network classification model is executed successfully
